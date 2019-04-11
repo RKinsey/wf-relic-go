@@ -2,3 +2,4 @@ vendor
 .vscode
 wf-relic-go
 get_relic_data
+mongourl.txt

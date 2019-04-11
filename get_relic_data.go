@@ -56,8 +56,10 @@ func get_relics() {
 	client.Connect(ctx)
 	r_coll := client.Database("warframe").Collection("relics")
 	i_coll := client.Database("warframe").Collection("items")
-	for i, relic := range relicPage.Relics {
-
+	for _, relic := range relicPage.Relics {
+		r_coll.Indexes()
+		fmt.Print(relic)
+		i_coll.Indexes()
 	}
 }
 

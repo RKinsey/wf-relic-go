@@ -32,10 +32,10 @@ type Relic struct {
 
 //RelicPage is a struct for the Warframestat Relic API JSON
 type RelicPage struct {
-	Relics []Relic //`json:"relics"`
+	Relics []Relic `json:"relics"`
 }
 
-func GetRelics(mongourl string) {
+func GetRelicAPI(mongourl string) {
 	resp, err := http.Get(relicURL)
 	if err != nil {
 		log.Fatal(err)
@@ -65,17 +65,18 @@ func GetRelics(mongourl string) {
 	}
 	client.Disconnect(ctx)
 }
-func RelicToBSON(relic *Relic) bson.D {
-	item_ids := make([]string, len(relic.Rewards))
-	for i, rel := range relic.Rewards {
-		item_ids[i] = rel.ID
-	}
 
+//RelicToBSON
+func RelicToBSON(relic *Relic) bson.D {
+	itemIDs := make([]string, len(relic.Rewards))
+	for i, rel := range relic.Rewards {
+		itemIDs[i] = rel.ID
+	}
 	return bson.D{
-		{"relicid", relic.ID},
-		{"Tier", relic.Tier},
-		{"relicName", relic.RelicName},
-		{"rewardIDs", item_ids},
+		{Key: "relicid", Value: relic.ID},
+		{Key: "Tier", Value: relic.Tier},
+		{Key: "relicName", Value: relic.RelicName},
+		{Key: "rewardIDs", Value: itemIDs},
 	}
 }
 
@@ -90,13 +91,12 @@ func handleRelic(ctx context.Context, relicCollection, itemCollection *mongo.Col
 	}
 	return nil
 }
-func main() {
-	if len(os.Args) != 2 {
-		log.Fatalln("Usage: get_relic_data [mongo url]")
-	}
-	mongoURL, err := ioutil.ReadFile(os.Args[1])
+
+//ManualFill is called from main when relic-ev-go is called with the -g flag
+func manualFill() {
+	mongoURL, err := ioutil.ReadFile(os.Args[2])
 	if err != nil {
-		log.Fatalln("Argument should be a file with the URL of your mongodb server")
+		log.Fatalln("[mongourl] argument should be a file with the URL of your mongodb server")
 	}
-	GetRelics(string(mongoURL))
+	GetRelicAPI(string(mongoURL))
 }

@@ -7,6 +7,9 @@ import (
 	"time"
 )
 
+/*StartReloader makes a RelicReloader with its own ticker and quit channel
+ *
+ */
 func StartReloader() chan int {
 	mongoURL, err := ioutil.ReadFile(os.Args[1])
 	dur, _ := time.ParseDuration("48h")
@@ -23,7 +26,7 @@ func RelicReloader(mongourl string, ticker *time.Ticker, quit chan int) {
 	for {
 		select {
 		case <-ticker.C:
-			GetRelics(mongourl)
+			GetRelicAPI(mongourl, quit)
 		case <-quit:
 			return
 		}

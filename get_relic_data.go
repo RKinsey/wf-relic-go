@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const marketURL string = "https://api.warframe.market/v1/items/"
 const relicURL string = "https://drops.warframestat.us/data/relics.json"
 
 //Relic Struct for pulling from the relic API
@@ -35,8 +33,9 @@ type RelicPage struct {
 	Relics []Relic `json:"relics"`
 }
 
-func GetRelicAPI(mongourl string) {
-	resp, err := http.Get(relicURL)
+//GetBytesFromURL makes a GET request on a URL and returns the body
+func GetBytesFromURL(URL string) []byte {
+	resp, err := http.Get(URL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -45,6 +44,11 @@ func GetRelicAPI(mongourl string) {
 	if readerr != nil {
 		log.Fatal(readerr)
 	}
+	return body
+}
+
+func GetRelicAPI(mongourl string) {
+	body := GetBytesFromURL(relicURL)
 	relicPage := RelicPage{}
 
 	jsonerr := json.Unmarshal(body, &relicPage)
@@ -60,9 +64,12 @@ func GetRelicAPI(mongourl string) {
 	rColl := client.Database("warframe").Collection("relics")
 	iColl := client.Database("warframe").Collection("items")
 	inserted := new(sync.Map)
+	wg := new(sync.WaitGroup)
 	for i := 0; i < len(relicPage.Relics); i += 4 {
-		handleRelic(ctx, rColl, iColl, &relicPage.Relics[i], inserted)
+		wg.Add(1)
+		handleRelic(ctx, rColl, iColl, &relicPage.Relics[i], inserted, wg)
 	}
+	wg.Wait()
 	client.Disconnect(ctx)
 }
 
@@ -80,23 +87,15 @@ func RelicToBSON(relic *Relic) bson.D {
 	}
 }
 
-func handleRelic(ctx context.Context, relicCollection, itemCollection *mongo.Collection, relic *Relic, inserted *sync.Map) (err error) {
+func handleRelic(ctx context.Context, relicCollection, itemCollection *mongo.Collection, relic *Relic, inserted *sync.Map, wg *sync.WaitGroup) (err error) {
 	r := RelicToBSON(relic)
 	relicCollection.InsertOne(ctx, r)
 	for _, item := range relic.Rewards {
 		_, loaded := inserted.LoadOrStore(item.ID, 1)
 		if !loaded {
-			itemCollection.InsertOne(ctx, bson.D{{"itemid", item.ID}, {"itemName", item.ItemName}, {"rarity", item.Rarity}})
+			itemCollection.InsertOne(ctx, bson.D{{Key: "itemid", Value: item.ID}, {Key: "itemName", Value: item.ItemName}, {Key: "rarity", Value: item.Rarity}})
 		}
 	}
+	wg.Done()
 	return nil
-}
-
-//ManualFill is called from main when relic-ev-go is called with the -g flag
-func manualFill() {
-	mongoURL, err := ioutil.ReadFile(os.Args[2])
-	if err != nil {
-		log.Fatalln("[mongourl] argument should be a file with the URL of your mongodb server")
-	}
-	GetRelicAPI(string(mongoURL))
 }

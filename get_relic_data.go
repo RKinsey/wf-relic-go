@@ -35,17 +35,6 @@ type RelicPage struct {
 	Relics []Relic //`json:"relics"`
 }
 
-func RelicReloader(mongourl string, ticker time.Ticker, quit chan int) {
-	for {
-		select {
-		case <-ticker.C:
-			GetRelics(mongourl)
-		case <-quit:
-			return
-		}
-	}
-}
-
 func GetRelics(mongourl string) {
 	resp, err := http.Get(relicURL)
 	if err != nil {

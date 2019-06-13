@@ -33,6 +33,21 @@ type RelicPage struct {
 	Relics []Relic `json:"relics"`
 }
 
+func getProbArray(level int) [3]float64 {
+	switch level {
+	case 0:
+		return [3]float64{.76 / 3, .11, .02}
+	case 1:
+		return [3]float64{.7 / 3, .13, .04}
+	case 2:
+		return [3]float64{.2, .17, .06}
+	case 3:
+		return [3]float64{.5 / 3, .2, .10}
+	default:
+		panic("Unexpected relic level")
+	}
+}
+
 //GetBytesFromURL makes a GET request on a URL and returns the body
 func GetBytesFromURL(URL string) []byte {
 	resp, err := http.Get(URL)
@@ -47,6 +62,7 @@ func GetBytesFromURL(URL string) []byte {
 	return body
 }
 
+//GetRelicAPI s
 func GetRelicAPI(mongourl string) {
 	body := GetBytesFromURL(relicURL)
 	relicPage := RelicPage{}
@@ -73,7 +89,7 @@ func GetRelicAPI(mongourl string) {
 	client.Disconnect(ctx)
 }
 
-//RelicToBSON
+//RelicToBSON s
 func RelicToBSON(relic *Relic) bson.D {
 	itemIDs := make([]string, len(relic.Rewards))
 	for i, rel := range relic.Rewards {

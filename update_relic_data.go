@@ -21,10 +21,11 @@ func StartReloader() chan int {
 		log.Fatalln("Argument should be a file with the URL of your mongodb server")
 	}
 
-	go RelicReloader(string(mongoURL), ticker, quit)
+	go relicReloader(string(mongoURL), ticker, quit)
 	return quit
 }
-func RelicReloader(mongourl string, ticker *time.Ticker, quit chan int) {
+
+func relicReloader(mongourl string, ticker *time.Ticker, quit chan int) {
 	for {
 		select {
 		case <-ticker.C:

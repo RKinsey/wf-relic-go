@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -42,7 +43,8 @@ func getPrices(mongoURL string) {
 	iColl := client.Database("warframe").Collection("items")
 	cur, _ := iColl.Find(ctx, bson.D{})
 	defer cur.Close(ctx)
-	used := make([]string,50)
+	used := make([]string, 50)
+	wg := new(sync.WaitGroup)
 	var result bson.M
 	for cur.Next(ctx) {
 		cur.Decode(&result)
@@ -51,7 +53,10 @@ func getPrices(mongoURL string) {
 	wg.Wait()
 	client.Disconnect(ctx)
 	for item, url := range urlMap {
-		iColl.Fin
+		body := GetBytesFromURL(marketURL + "/")
+		var j struct {
+		}
+		json.Unmarshal(body, &j)
 	}
-	body := GetBytesFromURL(marketURL + "/")
+
 }

@@ -3,3 +3,12 @@ vendor
 wf-relic-go
 get_relic_data
 mongourl.txt*
+\.idea/
+
+Gopkg\.lock
+
+*.code-workspace
+
+*.sum
+
+*.mod

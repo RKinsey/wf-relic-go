@@ -1,14 +1,7 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
-	"sync"
-	"time"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const marketURL string = "https://api.warframe.market/v1/items"
@@ -22,6 +15,16 @@ type MarketItems struct {
 		} `json:"en"`
 	} `json:"items"`
 }
+type MarketStats struct {
+	Payload struct {
+		Data struct {
+			StatArray []struct {
+				Volume   int `json:"volume"`
+				AvgPrice int `json:"avg_price"`
+			} `json:"90days"`
+		} `json:"statistics_closed"`
+	} `json:"payload"`
+}
 
 func findItemNames() map[string]string {
 	body := GetBytesFromURL(marketURL)
@@ -33,30 +36,30 @@ func findItemNames() map[string]string {
 	}
 	return toret
 }
-func getPrices(mongoURL string) {
-	urlMap := findItemNames()
+func GetPrices(mongoURL string) {
+	/*urlMap := findItemNames()
 	client, _ := mongo.NewClient(options.Client().ApplyURI(mongoURL))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	client.Connect(ctx)
-	rColl := client.Database("warframe").Collection("relics")
+	//rColl := client.Database("warframe").Collection("relics")
 	iColl := client.Database("warframe").Collection("items")
 	cur, _ := iColl.Find(ctx, bson.D{})
 	defer cur.Close(ctx)
-	used := make([]string, 50)
-	wg := new(sync.WaitGroup)
+	//used := make([]string, 50)
+	//wg := new(sync.WaitGroup)
 	var result bson.M
 	for cur.Next(ctx) {
 		cur.Decode(&result)
 
 	}
-	wg.Wait()
-	client.Disconnect(ctx)
-	for item, url := range urlMap {
-		body := GetBytesFromURL(marketURL + "/")
-		var j struct {
-		}
-		json.Unmarshal(body, &j)
-	}
+	//wg.Wait()
 
+	for item, url := range urlMap {
+		var priceDat MarketStats
+		body := GetBytesFromURL(marketURL + "/item/"+url+"/statistics")
+		json.Unmarshal(body, &priceDat)
+
+	}
+	client.Disconnect(ctx)*/
 }

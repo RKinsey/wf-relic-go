@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -21,21 +22,21 @@ type MarketItems struct {
 }
 type ItemT struct {
 	EN []struct{
-		Item_name string `json:"item_name" bson:"item_name"`
-		Url_name  string `json:"url_name" bson:"url_name"`
+		Item_name string `json:"item_name" bson:"itemName"`
+		Url_name  string `json:"url_name" bson:"urlName"`
 	} `json:"en"`
 }
 type MarketStats struct {
 	Payload struct {
-		Data DataT `json:"statistics_closed"`
+		StatClosed  struct {
+			StatArray []struct {
+				volume    int `json:"volume"`
+				Avg_price float64 `json:"avg_price"`
+			} `json:"90days"`
+		}`json:"statistics_closed"`
 	} `json:"payload"`
 }
-type DataT struct {
-	StatArray []struct {
-		volume   int `json:"volume"`
-		Avg_price int `json:"avg_price"`
-	}`json:"90days"`
-}
+
 func findItemNames() map[string]string {
 	body := GetBytesFromURL(marketURL)
 
@@ -64,10 +65,10 @@ func GetPrices(mongoURL string) {
 	//used := make([]string, 50)
 	//wg := new(sync.WaitGroup)
 
-	itemnames:=make([]string,50)
+	itemnames:=make([]string,0)
 	for cur.Next(ctx) {
 		var result struct{
-			Item_name string `bson:"item_name"`
+			Item_name string `bson:"itemName"`
 		}
 		err:=cur.Decode(&result)
 		if err!=nil{
@@ -78,20 +79,37 @@ func GetPrices(mongoURL string) {
 	//cur.Close(ctx)
 	//wg.Wait()
 
-	for _,item := range itemnames {
-		priceDat:= MarketStats{}
-		url:=marketURL +urlMap[item]+"/statistics"
-		body := GetBytesFromURL(url)
-		err:=json.Unmarshal(body, &priceDat)
-		if err!=nil{
-			log.Println(err)
-		}
-		length:=len(priceDat.Payload.Data.StatArray)
+	for i,item := range itemnames {
+		var average float64
+		var volume int
+		log.Printf("%d ",i)
+		if item !="Forma Blueprint" {
+			priceDat := MarketStats{}
+			if strings.Contains(item,"Kavasa Prime"){
+				 splitItem:=strings.Split(item," ")
+				 item="Kavasa Prime Collar "+splitItem[len(splitItem)-1]
+			}
+			uname := urlMap[item]
+			if uname == "" {
+				uname = urlMap[item[:len(item)-10]]
+			}
+			url := marketURL + "/" + uname + "/statistics"
+			log.Println(url)
+			body := GetBytesFromURL(url)
+			err := json.Unmarshal(body, &priceDat)
+			if err != nil {
+				log.Println(err)
+			}
+			length := len(priceDat.Payload.StatClosed.StatArray)
 
-		average:=priceDat.Payload.Data.StatArray[length-1].Avg_price
-		volume:=priceDat.Payload.Data.StatArray[length-1].volume
+			average = priceDat.Payload.StatClosed.StatArray[length-1].Avg_price
+			volume = priceDat.Payload.StatClosed.StatArray[length-1].volume
+		} else{
+			average=11+2./3
+			volume = 0
+		}
 		update:=bson.D{{"$set", bson.D{{"avg",average},{"vol",volume}}}}
-		iColl.UpdateOne(ctx,bson.D{{"itemName",item}},update,options.Update().SetUpsert(true))
+		iColl.UpdateOne(ctx,bson.D{{"itemName",item}},update)
 
 	}
 	client.Disconnect(ctx)

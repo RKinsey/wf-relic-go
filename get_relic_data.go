@@ -86,8 +86,8 @@ func handleRelic(ctx context.Context, relicCollection, itemCollection *mongo.Col
 		relic.Rewards[i].RarityEnum=PctRarityToInt(item.RarityFrac)
 		_, loaded := inserted.LoadOrStore(item.ID, 1)
 		if !loaded {
-			query := bson.D{{"_id", item.ID}, {"item_name", item.ItemName}}
-			ud := bson.D{{"$set", bson.D{{"_id", item.ID}, {"item_name", item.ItemName}}}}
+			query := bson.D{{"_id", item.ID}, {"itemName", item.ItemName}}
+			ud := bson.D{{"$set", bson.D{{"_id", item.ID}, {"itemName", item.ItemName}}}}
 			opt := options.Update()
 			opt.SetUpsert(true)
 			_, err := itemCollection.UpdateOne(ctx, query, ud, opt)

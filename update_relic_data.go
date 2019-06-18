@@ -25,11 +25,12 @@ func StartReloader() chan int {
 	return quit
 }
 
-func relicReloader(mongourl string, ticker *time.Ticker, quit chan int) {
+func relicReloader(mongoURL string, ticker *time.Ticker, quit chan int) {
 	for {
 		select {
 		case <-ticker.C:
-			GetRelicAPI(mongourl)
+			GetRelicAPI(mongoURL)
+			GetPrices(mongoURL)
 		case <-quit:
 			return
 		}

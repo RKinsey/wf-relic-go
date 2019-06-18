@@ -31,6 +31,7 @@ func allRelics(h http.ResponseWriter, r *http.Request) {
 }
 func manualFill(mongoURL string) {
 	GetRelicAPI(mongoURL)
+	GetPrices(mongoURL)
 }
 
 func main() {

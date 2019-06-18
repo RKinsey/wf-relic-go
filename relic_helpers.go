@@ -1,6 +1,8 @@
 package main
 
-import "strings"
+import (
+	"log"
+)
 
 //Relic grade enum
 
@@ -17,16 +19,15 @@ const (
 	Uncommon = iota
 	Rare     = iota
 )
-
-func StrRarityToInt(rarity string) int {
-	rarity = strings.ToLower(rarity)
+//PctRarityToInt converts the fractional chance to drop rarity
+func PctRarityToInt(rarity float64) int {
 	toRet := -1
 	switch rarity {
-	case "common":
+	case 25.33:
 		toRet = Common
-	case "uncommon":
+	case 11:
 		toRet = Uncommon
-	case "rare":
+	case 2:
 		toRet = Rare
 	}
 	return toRet
@@ -59,6 +60,7 @@ func GetProbArray(level int) [3]float64 {
 	case Radiant:
 		return [3]float64{.5 / 3, .2, .10}
 	default:
-		panic("Unexpected relic level")
+		log.Println("Unexpected relic level: "+string(level))
+		return [3]float64{.76 / 3, .11, .02}
 	}
 }

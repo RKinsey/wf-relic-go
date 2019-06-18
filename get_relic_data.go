@@ -20,15 +20,16 @@ const relicURL string = "https://drops.warframestat.us/data/relics.json"
 
 //Relic Struct for pulling from the relic API
 type Relic struct {
+	ID string `json:"_id" bson:"_id"`
 	Tier      string `json:"tier" bson:"tier"`
 	RelicName string `json:"relicName" bson:"relicName"`
 	Rewards   []struct {
 		ID          string `json:"_id" bson:"itemid"`
 		ItemName    string `json:"itemName" bson:"-"`
-		Rarity      string `json:"rarity" bson:"-"`
-		Rarity_enum int    `bson:"rarity"`
+		RarityFrac  float64 `json:"chance" bson:"-"`
+		RarityEnum  int    `bson:"rarity"`
 	} `json:"rewards" bson:"rewards"`
-	ID string `json:"_id" bson:"_id"`
+
 }
 
 //RelicPage is a struct for the Warframestat Relic API JSON used to sever out individual relic entries
@@ -70,47 +71,23 @@ func GetRelicAPI(mongourl string) {
 	inserted := new(sync.Map)
 	wg := new(sync.WaitGroup)
 	//relics:=make(bson.D,len(relicPage.Relics))
-	relicsToInsert := make([]interface{}, len(relicPage.Relics)/4)
 	for i := 0; i < len(relicPage.Relics); i += 4 {
 		wg.Add(1)
 		handleRelic(ctx, rColl, iColl, &relicPage.Relics[i], inserted, wg)
-		relicsToInsert = append(relicsToInsert, relicPage.Relics[i])
 	}
-
-	rColl.InsertMany(ctx, relicsToInsert)
 	wg.Wait()
 	client.Disconnect(ctx)
 }
 
-//RelicToBSON converts a Relic struct into bson.D form
-//NOTE: this uses warframestat's IDs, NOT Warframe.market's
-/*func RelicToBSON(relic *Relic) bson.D {
-	itemIDs := make([]string, len(relic.Rewards))
-	var rewards bson.D
-	for i, rel := range relic.Rewards {
-		rewards = append(rewards,{})
-	}
-	return bson.D{
-		{Key: "relicid", Value: relic.ID},
-		{Key: "Tier", Value: relic.Tier},
-		{Key: "relicName", Value: relic.RelicName},
-		{Key: "rewards", Value: itemIDs},
-	}
-}*/
-
 //handleRelic crunches a a relic struct into BSON form and inserts it into the MongoDB instance
-func handleRelic(ctx context.Context, relicCollection, itemCollection *mongo.Collection, relic *Relic, inserted *sync.Map, wg *sync.WaitGroup) (err error) {
-	//r := RelicToBSON(relic)
-	/*r,err:=bson.Marshal(relic)
-	if err!=nil{
-		log.Panic("Failed to marshal BSON")
-	}*/
+func handleRelic(ctx context.Context, relicCollection, itemCollection *mongo.Collection, relic *Relic, inserted *sync.Map, wg *sync.WaitGroup) {
 
-	for _, item := range relic.Rewards {
+	for i, item := range relic.Rewards {
+		relic.Rewards[i].RarityEnum=PctRarityToInt(item.RarityFrac)
 		_, loaded := inserted.LoadOrStore(item.ID, 1)
 		if !loaded {
-			query := bson.D{{"_id", item.ID}, {"itemName", item.ItemName}}
-			ud := bson.D{{"$set", bson.D{{"_id", item.ID}, {"itemName", item.ItemName}}}}
+			query := bson.D{{"_id", item.ID}, {"item_name", item.ItemName}}
+			ud := bson.D{{"$set", bson.D{{"_id", item.ID}, {"item_name", item.ItemName}}}}
 			opt := options.Update()
 			opt.SetUpsert(true)
 			_, err := itemCollection.UpdateOne(ctx, query, ud, opt)
@@ -118,9 +95,24 @@ func handleRelic(ctx context.Context, relicCollection, itemCollection *mongo.Col
 				fmt.Println(err)
 			}
 		}
-
 	}
-	//relicCollection.InsertOne(ctx, r)
+	query:=bson.D{{"_id",relic.ID},{"tier",relic.Tier},{"relicName",relic.RelicName}}
+	//This is extremely hacky but I can't find a way to convert my structs directly to bson.Ds
+	umholder:=new(bson.D)
+	updata,err:=bson.Marshal(relic)
+	if err!=nil{
+		log.Println(err)
+	}
+	err= bson.Unmarshal(updata,umholder)
+	if err!=nil{
+		log.Println(err)
+	}
+	update_doc:=bson.D{{"$set",umholder}}
+	opt:=options.Update()
+	opt.SetUpsert(true)
+	_,err=relicCollection.UpdateOne(ctx,query,update_doc,opt)
+	if err!=nil{
+		log.Println(err)
+	}
 	wg.Done()
-	return nil
 }

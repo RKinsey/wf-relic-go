@@ -82,7 +82,7 @@ func GetPrices(mongoURL string) {
 	for i,item := range itemnames {
 		var average float64
 		var volume int
-		log.Printf("%d ",i)
+
 		if item !="Forma Blueprint" {
 			priceDat := MarketStats{}
 			if strings.Contains(item,"Kavasa Prime"){
@@ -94,7 +94,6 @@ func GetPrices(mongoURL string) {
 				uname = urlMap[item[:len(item)-10]]
 			}
 			url := marketURL + "/" + uname + "/statistics"
-			log.Println(url)
 			body := GetBytesFromURL(url)
 			err := json.Unmarshal(body, &priceDat)
 			if err != nil {

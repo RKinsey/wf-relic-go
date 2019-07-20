@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"strings"
+	"sync"
 )
 
 const marketURL string = "https://api.warframe.market/v1/items"
@@ -52,39 +53,44 @@ func GetPrices(ctx context.Context, mongoURL string) {
 	}
 	_ = cur.Close(ctx)
 	//wg.Wait()
+	var wg sync.WaitGroup
+	for _, itm := range itemnames {
+		item:=itm
+		wg.Add(1)
+		go func() {
+			var average float64
+			var volume int
+			//TODO: add concurrency
+			if item != "Forma Blueprint" {
+				priceDat := MarketStats{}
+				if strings.Contains(item, "Kavasa Prime") {
+					splitItem := strings.Split(item, " ")
+					item = "Kavasa Prime Collar " + splitItem[len(splitItem)-1]
+				}
+				uname := urlMap[item]
+				if uname == "" {
+					uname = urlMap[item[:len(item)-10]]
+				}
+				url := marketURL + "/" + uname + "/statistics"
+				body := GetBytesFromURL(url)
+				err := json.Unmarshal(body, &priceDat)
+				if err != nil {
+					log.Println(err)
+				}
+				length := len(priceDat.Payload.StatClosed.StatArray)
 
-	for _, item := range itemnames {
-		var average float64
-		var volume int
-	//TODO: add concurrency
-		if item != "Forma Blueprint" {
-			priceDat := MarketStats{}
-			if strings.Contains(item, "Kavasa Prime") {
-				splitItem := strings.Split(item, " ")
-				item = "Kavasa Prime Collar " + splitItem[len(splitItem)-1]
+				average = priceDat.Payload.StatClosed.StatArray[length-1].Avg_price
+
+				volume = priceDat.Payload.StatClosed.StatArray[length-1].Volume
+			} else {
+				average = 11 + 2./3
+				volume = 0
 			}
-			uname := urlMap[item]
-			if uname == "" {
-				uname = urlMap[item[:len(item)-10]]
-			}
-			url := marketURL + "/" + uname + "/statistics"
-			body := GetBytesFromURL(url)
-			err := json.Unmarshal(body, &priceDat)
-			if err != nil {
-				log.Println(err)
-			}
-			length := len(priceDat.Payload.StatClosed.StatArray)
-
-			average = priceDat.Payload.StatClosed.StatArray[length-1].Avg_price
-			volume = priceDat.Payload.StatClosed.StatArray[length-1].Volume
-		} else {
-			average = 11 + 2./3
-			volume = 0
-		}
-		update := bson.D{{"$set", bson.D{{"avg", average}, {"vol", volume}}}}
-		_, _ = iColl.UpdateOne(ctx, bson.D{{"itemName", item}}, update)
-
-
+			update := bson.D{{"$set", bson.D{{"avg", average}, {"vol", volume}}}}
+			_, _ = iColl.UpdateOne(ctx, bson.D{{"itemName", item}}, update)
+			wg.Done()
+		}()
 	}
+	wg.Wait()
 	_ = client.Disconnect(ctx)
 }

@@ -53,7 +53,7 @@ func GetRelicAPI(ctx context.Context, mongourl string) {
 
 	for i := 0; i < len(relicPage.Relics); i += 4 {
 		wg.Add(1)
-		handleRelic(ctx, rColl, iColl, &relicPage.Relics[i], inserted, wg)
+		go handleRelic(ctx, rColl, iColl, &relicPage.Relics[i], inserted, wg)
 	}
 	wg.Wait()
 	client.Disconnect(ctx)

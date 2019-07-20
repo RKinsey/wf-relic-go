@@ -120,7 +120,7 @@ func FillAndCalculate(id string, tier string, quality int)(*Relic) {
 
 func main() {
 	updateOnly := flag.Bool("u", false, "Run only a database update and do not serve")
-	skipUpdate := flag.Bool("skip-update", true, "Skip database update on startup, still starts a reloader")
+	skipUpdate := flag.Bool("skip-update", false, "Skip database update on startup, still starts a reloader")
 	flag.Parse()
 	if len(flag.Args()) != 1 {
 		log.Fatalln(usage)

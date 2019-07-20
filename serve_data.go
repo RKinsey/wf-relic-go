@@ -44,18 +44,49 @@ func AllRelics(h http.ResponseWriter, r *http.Request) {
 	if err!=nil||quality>3{
 		quality=0
 	}
-	log.Println(qvar)
-	result:=SendManyRelics{}
-	result.ToSend=make(*Relic)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	client, _ := mongo.NewClient(options.Client().ApplyURI(MONGOURL))
+	client.Connect(ctx)
+	rColl := client.Database("warframe").Collection("relics")
+	cur,_ := rColl.Find(ctx, bson.D{})
+
+
+	numRel64,_:=rColl.CountDocuments(ctx,bson.D{})
+	numRel:=int(numRel64)
+
+	rc:=make(chan *Relic)
+	relics:=make([]*Relic,numRel)
+
+	for cur.Next(ctx){
+		var relicInfo struct{
+			Tier string `bson:"tier"`
+			RelicName string `bson:"relicName"`
+		}
+		cur.Decode(&(relicInfo))
+		go FCChannel(relicInfo.RelicName,relicInfo.Tier,quality,rc)
+	}
+
+	for i:=0;i<numRel;i++{
+		relics[i] = <-rc
+	}
+	result:= SendManyRelics{relics}
 	marshaledSend,_:=json.Marshal(result)
 	h.Header().Set("Content-Type","application/json")
 	h.Write(marshaledSend)
-	h.Write([]byte("Sorry, this isn't implemented yet"))
+}
+func FCChannel(id string, tier string, quality int, relChan chan *Relic){
+	relChan<-FillAndCalculate(id,tier,quality)
 }
 
-func FillAndCalculate(id string, tier string, quality int) (*Relic){
+func FillAndCalculate(id string, tier string, quality int)(*Relic) {
 
-	 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	client, _ := mongo.NewClient(options.Client().ApplyURI(MONGOURL))
+	client.Connect(ctx)
+	rColl := client.Database("warframe").Collection("relics")
+	cur := rColl.FindOne(ctx, bson.D{{"relicName", id}, {"tier", tier}})
 
 	result:=new(Relic)
 	err := cur.Decode(result)

@@ -2,10 +2,15 @@ package main
 
 //RelicPage is a struct for the Warframestat Relic API JSON used to sever out individual relic entries
 type RelicPage struct {
-	Relics []Relic `json:"relics"`
+	Relics []APIRelic `json:"relics"`
 }
-type SendRelic struct {
-	Rlc struct {
+type SendSingleRelic struct {
+	ToSend *Relic `json:"relic"`
+}
+type SendManyRelics struct{
+	ToSend []Relic `json:"relics"`
+}
+type Relic struct{
 		//Tier of the Relic
 		Tier string `json:"tier" bson:"tier"`
 		//Name is the two character identifier (e.g. A2)
@@ -20,11 +25,10 @@ type SendRelic struct {
 			Volume   int `json:"recentVolume" bson:"vol"`
 			AvgPrice float64 `json:"avgPrice" bson:"avg"`
 		} `json:"rewards" bson:"rewards"`
-	} `json:"relic"`
 }
 
 //Relic Struct for pulling from the relic API
-type Relic struct {
+type APIRelic struct {
 	ID        string `json:"_id" bson:"_id"`
 	Tier      string `json:"tier" bson:"tier"`
 	RelicName string `json:"relicName" bson:"relicName"`

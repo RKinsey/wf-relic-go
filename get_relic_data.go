@@ -60,7 +60,7 @@ func GetRelicAPI(ctx context.Context, mongourl string) {
 }
 
 //handleRelic crunches a a relic struct into BSON form and inserts it into the MongoDB instance
-func handleRelic(ctx context.Context, relicCollection, itemCollection *mongo.Collection, relic *Relic, inserted *sync.Map, wg *sync.WaitGroup) {
+func handleRelic(ctx context.Context, relicCollection, itemCollection *mongo.Collection, relic *APIRelic, inserted *sync.Map, wg *sync.WaitGroup) {
 
 	for i, item := range relic.Rewards {
 		relic.Rewards[i].RarityEnum = PctRarityToInt(item.RarityFrac)

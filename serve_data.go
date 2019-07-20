@@ -25,51 +25,67 @@ func serve() {
 }
 func FindRelic(h http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	qvar:=r.FormValue("qual")
-	quality,err:=strconv.Atoi(qvar)
+	qvar := r.FormValue("qual")
+	quality, err := strconv.Atoi(qvar)
 	if err!=nil||quality>3{
 		quality=0
 	}
 	log.Println(qvar)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	client, _ := mongo.NewClient(options.Client().ApplyURI(MONGOURL))
-	client.Connect(ctx)
-	rColl := client.Database("warframe").Collection("relics")
-	cur:= rColl.FindOne(ctx, bson.D{{"relicName",vars["id"]},{"tier",vars["tier"]}})
-
-	result:=SendRelic{}
-	err = cur.Decode(&result.Rlc)
-	if err != nil {
-		log.Println(err)
-	}
-	rarityArray:=GetProbArray(quality)
-	iColl := client.Database("warframe").Collection("items")
-	var ev float64
-	for i,item := range result.Rlc.Rewards {
-		cur= iColl.FindOne(ctx, bson.D{{"_id", item.ID}})
-		chance:=rarityArray[item.Rarity]
-		var rwds struct{
-			ItemName string `bson:"itemName"`
-			Avg		float64 `bson:"avg"`
-			Vol		int		`bson:"vol"`
-		}
-		cur.Decode(&rwds)
-		result.Rlc.Rewards[i].ItemName=rwds.ItemName
-		result.Rlc.Rewards[i].AvgPrice=rwds.Avg
-		result.Rlc.Rewards[i].Volume=rwds.Vol
-		result.Rlc.Rewards[i].Chance=chance
-		ev+=rwds.Avg*chance
-	}
-	result.Rlc.RelicEV=ev
+	result:=SendSingleRelic{FillAndCalculate(vars["id"],vars["tier"],quality)}
 	marshaledSend,_:=json.Marshal(result)
 	h.Header().Set("Content-Type","application/json")
 	h.Write(marshaledSend)
 
 }
 func AllRelics(h http.ResponseWriter, r *http.Request) {
+
+	qvar := r.FormValue("qual")
+	quality, err := strconv.Atoi(qvar)
+	if err!=nil||quality>3{
+		quality=0
+	}
+	log.Println(qvar)
+	result:=SendManyRelics{}
+	result.ToSend=make(*Relic)
+	marshaledSend,_:=json.Marshal(result)
+	h.Header().Set("Content-Type","application/json")
+	h.Write(marshaledSend)
 	h.Write([]byte("Sorry, this isn't implemented yet"))
 }
+
+func FillAndCalculate(id string, tier string, quality int) (*Relic){
+
+	 
+
+	result:=new(Relic)
+	err := cur.Decode(result)
+	if err != nil {
+		log.Println(err)
+	}
+	rarityArray := GetProbArray(quality)
+	iColl := client.Database("warframe").Collection("items")
+	var ev float64
+	for i, item := range result.Rewards {
+		cur = iColl.FindOne(ctx, bson.D{{"_id", item.ID}})
+		chance := rarityArray[item.Rarity]
+		//Doesn't decode properly if I use Result.Relic.Rewards[i]
+		var rwds struct {
+			ItemName string  `bson:"itemName"`
+			Avg      float64 `bson:"avg"`
+			Vol      int     `bson:"vol"`
+		}
+		cur.Decode(&rwds)
+		result.Rewards[i].ItemName = rwds.ItemName
+		result.Rewards[i].AvgPrice = rwds.Avg
+		result.Rewards[i].Volume = rwds.Vol
+		result.Rewards[i].Chance = chance
+		ev += rwds.Avg * chance
+	}
+	result.RelicEV = ev
+	return result
+}
+
+
 
 func main() {
 	updateOnly := flag.Bool("u", false, "Run only a database update and do not serve")

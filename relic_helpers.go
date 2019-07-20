@@ -53,6 +53,7 @@ func FillRelics(mongoURL string) {
 	start_time:=time.Now()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
 	GetRelicAPI(ctx, mongoURL)
 	log.Println(time.Since(start_time))
 	start_time=time.Now()

@@ -16,10 +16,7 @@ import (
 //relicURL holds the URL to the relic data API
 const relicURL string = "https://drops.warframestat.us/data/relics.json"
 
-//RelicPage is a struct for the Warframestat Relic API JSON used to sever out individual relic entries
-type RelicPage struct {
-	Relics []Relic `json:"relics"`
-}
+
 
 //GetBytesFromURL makes a GET request on a URL and returns the body
 func GetBytesFromURL(URL string) []byte {

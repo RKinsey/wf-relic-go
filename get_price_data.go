@@ -50,13 +50,13 @@ func GetPrices(ctx context.Context, mongoURL string) {
 		}
 		itemnames = append(itemnames, result.Item_name)
 	}
-	//cur.Close(ctx)
+	_ = cur.Close(ctx)
 	//wg.Wait()
 
 	for _, item := range itemnames {
 		var average float64
 		var volume int
-
+	//TODO: add concurrency
 		if item != "Forma Blueprint" {
 			priceDat := MarketStats{}
 			if strings.Contains(item, "Kavasa Prime") {
@@ -82,8 +82,9 @@ func GetPrices(ctx context.Context, mongoURL string) {
 			volume = 0
 		}
 		update := bson.D{{"$set", bson.D{{"avg", average}, {"vol", volume}}}}
-		iColl.UpdateOne(ctx, bson.D{{"itemName", item}}, update)
+		_, _ = iColl.UpdateOne(ctx, bson.D{{"itemName", item}}, update)
+
 
 	}
-	client.Disconnect(ctx)
+	_ = client.Disconnect(ctx)
 }

@@ -1,18 +1,28 @@
 package main
 
-type APIRelic struct{
-	FissureTier string	`json:"fissure_tier"`
-	RelicName	string	`json:"relic_name"`
-	RelicGrade	string	`json:"relic_grade"`
-	Rewards []struct{
-		ID 			string	`json:"-" bson:"_id"`
-		ItemName	string	`json:"reward_name" bson:"itemName"`
-		Rarity		string	`json:"rarity"`
-		Chance		int		`json:"drop_chance"`
-		RarityEnum	int		`bson:"rarity"`
-		Price		float64	`bson:""`
-	}
+//RelicPage is a struct for the Warframestat Relic API JSON used to sever out individual relic entries
+type RelicPage struct {
+	Relics []Relic `json:"relics"`
 }
+type SendRelic struct {
+	Rlc struct {
+		//Tier of the Relic
+		Tier string `json:"tier" bson:"tier"`
+		//Name is the two character identifier (e.g. A2)
+		Name string `json:"relicName" bson:"relicName"`
+		//Relic's expected value
+		RelicEV float64 `json:"relicEV" bson:"-"`
+		Rewards []struct {
+			ID       string  `json:"-" bson:"itemid"`
+			ItemName string  `json:"itemName" bson:"itemName"`
+			Rarity   int     `json:"-" bson:"rarity"`
+			Chance   float64 `json:"dropChance"`
+			Volume   int `json:"recentVolume" bson:"vol"`
+			AvgPrice float64 `json:"avgPrice" bson:"avg"`
+		} `json:"rewards" bson:"rewards"`
+	} `json:"relic"`
+}
+
 //Relic Struct for pulling from the relic API
 type Relic struct {
 	ID        string `json:"_id" bson:"_id"`

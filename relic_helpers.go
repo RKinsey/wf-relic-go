@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"log"
+	"time"
 )
 
 //Relic grade enum
@@ -19,6 +21,7 @@ const (
 	Uncommon = iota
 	Rare     = iota
 )
+
 //PctRarityToInt converts the fractional chance to drop rarity
 func PctRarityToInt(rarity float64) int {
 	toRet := -1
@@ -45,6 +48,16 @@ func IntRarityToStr(rarity int) string {
 	return toRet
 }
 
+//FillRelics is called at startup
+func FillRelics(mongoURL string) {
+	start_time:=time.Now()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	GetRelicAPI(ctx, mongoURL)
+	GetPrices(ctx, mongoURL)
+	log.Println(time.Since(start_time))
+}
+
 //GetProbArray takes an integer from the grade constants
 //Recommended to use the relic grade constants for readability purposes
 //Returns a 3-element array with the probabilities for that grade in the form [common, uncommon, rare]
@@ -60,7 +73,7 @@ func GetProbArray(level int) [3]float64 {
 	case Radiant:
 		return [3]float64{.5 / 3, .2, .10}
 	default:
-		log.Println("Unexpected relic level: "+string(level))
+		log.Println("Unexpected relic level: " + string(level))
 		return [3]float64{.76 / 3, .11, .02}
 	}
 }

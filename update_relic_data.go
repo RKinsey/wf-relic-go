@@ -14,6 +14,7 @@ import (
  *Note: this does NOT run when started because of how time.Ticker works
  */
 func StartReloader() chan int {
+	//TODO: use timestamp checking for scalability (i.e. only one server in a cluster runs the update). Might be better to just use cron job
 	mongoURL, err := ioutil.ReadFile(os.Args[1])
 	dur, _ := time.ParseDuration("48h")
 	ticker := time.NewTicker(dur)

@@ -8,7 +8,7 @@ type SendSingleRelic struct {
 	ToSend *Relic `json:"relic"`
 }
 type SendManyRelics struct{
-	ToSend []Relic `json:"relics"`
+	ToSend []*Relic `json:"relics"`
 }
 type Relic struct{
 		//Tier of the Relic
